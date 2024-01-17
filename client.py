@@ -1,8 +1,9 @@
-# #!/usr/bin/env python3
+#!/usr/bin/env python3
 
 import paho.mqtt.client as mqtt
 import time
 from datetime import datetime
+from config import *
 from mfrc522 import MFRC522
 import neopixel
 import board
