@@ -11,8 +11,8 @@ import RPi.GPIO as GPIO
 
 Color = tuple[int, int, int]
 BLANK_COLOR = Color(0, 0, 0)
-RED_COLOR = Color(255, 0, 0)
-GREEN_COLOR = Color(0, 255, 0)
+RED_COLOR = (255, 0, 0)
+GREEN_COLOR = (0, 255, 0)
 
 pixels = neopixel.NeoPixel(board.D18, 8, brightness=1.0/32, auto_write=False)
 
@@ -31,13 +31,17 @@ def buzzer_pattern(iterations: int, buzzer_length: float, pause_length: float):
 
 def read_success():
     pixels.fill(GREEN_COLOR)
+    pixels.show()
     buzzer_pattern(iterations=1, buzzer_length=1, pause_length=0)
     pixels.fill(BLANK_COLOR)
+    pixels.show()
 
 def read_failure():
     pixels.fill(RED_COLOR)
+    pixels.show()
     buzzer_pattern(iterations=3, buzzer_length=0.5, pause_length=0.25)
     pixels.fill(BLANK_COLOR)
+    pixels.show()
 
 
 def blink():
@@ -53,7 +57,9 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, userdata, message):
     topic = message.topic.split("/")
+    print(str(topic) + " ")
     message_decoded = str(message.payload.decode("utf-8"))
+    print(message_decoded)
     action = topic[1]
     return_message: str
 
@@ -86,6 +92,8 @@ def get_rfid_publish_data(client):
                         num += uid[i] << (i*8)
                     print(f"Card read UID: {num}")
                     print(f"Date and time of scanning: {dt}")
+                    # read_failure()
+                    last_scan = datetime.timestamp(dt)
                     client.publish(f"client/card/{num}", f"{dt}, {room_name}")
                     client.subscribe(f"server/card/{num}")
 
@@ -98,12 +106,14 @@ def register_room(client):
         client.disconnect()
 
 def main():
+    broker = 'localhost'
     client = mqtt.Client()
     client.on_connect = on_connect
     client.on_message = on_message
 
     # Connect to the MQTT broker
-    client.connect() # TODO: add broker ip address/port
+    client.connect(broker) # TODO: add broker ip address/port
+    client.loop_start()
 
     # Register room
     register_room(client)

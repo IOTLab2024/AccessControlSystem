@@ -16,8 +16,15 @@ def get_authenticated_users():
 
 def authorize_user(user_number):
     authenticated_users = get_authenticated_users()
+    
+    connection = sqlite3.connect(DATABASE_NAME)
+    cursor = connection.cursor()
+    cursor.execute(f"UPDATE User SET is_authenticated = true WHERE rfid = {user_number}")
+    connection.commit()
+    connection.close()
+    print(f"User with RFID {user_number} authorized successfully.")
 
-    if 1 <= user_number <= len(authenticated_users):
+    """ if 1 <= user_number <= len(authenticated_users):
         selected_user_rfid = authenticated_users[user_number - 1][0]
         connection = sqlite3.connect(DATABASE_NAME)
         cursor = connection.cursor()
@@ -26,7 +33,7 @@ def authorize_user(user_number):
         connection.close()
         print(f"User with RFID {selected_user_rfid} authorized successfully.")
     else:
-        print("Invalid user number. Please choose a valid number.")
+        print("Invalid user number. Please choose a valid number.") """
 
 def display_authenticated_users():
     authenticated_users = get_authenticated_users()

@@ -4,17 +4,19 @@ import paho.mqtt.client as mqtt
 import sqlite3
 import time
 
-connection = sqlite3.connect('iotDB.db')
+connection = sqlite3.connect('iotDB.db', check_same_thread=False)
 cursor = connection.cursor()
 
 def on_connect(client, userdata, flags, rc):
-    print("Connected with result code {rc}")
+    print(f"Connected with result code {rc}")
     client.subscribe("client/room/+")
     client.subscribe("client/card/+")
 
 def on_message(client, userdata, message):
     topic = message.topic.split("/")
+    print(str(topic) + " ")
     message_decoded = str(message.payload.decode("utf-8"))
+    print(message_decoded)
     action = topic[1]
     return_message: str
     
@@ -36,7 +38,7 @@ def on_message(client, userdata, message):
         else:
             return_message = "closed"
         client.publish(f"server/{action}/{rfid}", return_message)
-            
+                
     
 def register_room(room_name):
     try:
@@ -58,8 +60,11 @@ def validate_card(rfid, message):
         connection.commit()
         return True
     else:
-        cursor.execute(f"INSERT INTO User (rfid) VALUES ('{rfid}')")
-        connection.commit()
+        try:
+            cursor.execute(f"INSERT INTO User (rfid) VALUES ('{rfid}')")
+            connection.commit()
+        except:
+            pass
         # If no matching record is found, the card is not valid
         return False
 
@@ -111,9 +116,20 @@ def is_user_in_room(rfid):
         return False
             
 def run_server():
+    broker = '10.108.33.123'
     client = mqtt.Client()
+    
     client.on_connect = on_connect
     client.on_message = on_message
+    
+    client.connect(broker)
+    client.loop_start()
+    try:
+        while True:
+            pass
+    except KeyboardInterrupt:
+        client.loop_stop()
+        return
 
 if __name__ == "__main__":
     run_server()

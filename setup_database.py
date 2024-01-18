@@ -23,8 +23,7 @@ def create_database():
 
     cursor.execute("""
         CREATE INDEX idx_rfid 
-        ON User 
-        USING HASH (rfid);
+        ON User (rfid);
     """)
 
     cursor.execute("""
