@@ -1,25 +1,38 @@
 #!/usr/bin/env python3
 
-import paho.mqtt.client as mqtt
-import time
+from typing import NamedTuple
 from datetime import datetime
-from config import *
-from mfrc522 import MFRC522
-import neopixel
-import board
+
+import time
 import RPi.GPIO as GPIO
+import board
+from neopixel import NeoPixel
+from mfrc522 import MFRC522
+import paho.mqtt.client as mqtt
 
-Color = tuple[int, int, int]
+from config import *
+
+
+Color = NamedTuple(
+    'Color', [
+        ('red', int), 
+        ('green', int), 
+        ('blue', int)
+    ]
+)
 BLANK_COLOR = Color(0, 0, 0)
-RED_COLOR = (255, 0, 0)
-GREEN_COLOR = (0, 255, 0)
+RED_COLOR = Color(255, 0, 0)
+GREEN_COLOR = Color(0, 255, 0)
 
-pixels = neopixel.NeoPixel(board.D18, 8, brightness=1.0/32, auto_write=False)
+ROOM_NAME = 'room1'
+BROKER = '10.108.33.123'
 
-room_name = "room1"
+client = mqtt.Client()
+pixels = NeoPixel(board.D18, 8, brightness=1.0/32, auto_write=False)
+rfid_reader = MFRC522()
 
 def buzzer_state(state):
-    GPIO.output(buzzerPin, not state)  # pylint: disable=no-member
+    GPIO.output(buzzerPin, not state)
 
 def buzzer_pattern(iterations: int, buzzer_length: float, pause_length: float):
     for i in range(iterations):
@@ -43,83 +56,69 @@ def read_failure():
     pixels.fill(BLANK_COLOR)
     pixels.show()
 
-
-def blink():
-    GPIO.output(led1, GPIO.HIGH)
-    time.sleep(1)
-    GPIO.output(led1, GPIO.LOW)
-    time.sleep(1)
-
 def on_connect(client, userdata, flags, rc):
-    print(f"Connected with result code {rc}")
-    client.subscribe(f"server/room/{room_name}")
-    
+    print(f'Connected with result code {rc}')
+    client.subscribe(f'server/room/{ROOM_NAME}')
 
 def on_message(client, userdata, message):
-    topic = message.topic.split("/")
-    print(str(topic) + " ")
-    message_decoded = str(message.payload.decode("utf-8"))
+    topic = message.topic.split('/')
+    print(str(topic) + ' ')
+    message_decoded = str(message.payload.decode('utf-8'))
     print(message_decoded)
-    action = topic[1]
-    return_message: str
+    subject = topic[1]
 
-    if action == "room":
-        room_name = topic[2]
-        if message_decoded == "success":
-            print("Room added to database")
-        elif  message_decoded == "failure":
-            print("Room adding to database failed")
-            
-    elif action == "card":
-        if message_decoded == "closed":
+    if subject == 'room':
+        if message_decoded == 'success':
+            print('Room added to database')
+        elif message_decoded == 'failure':
+            print('Room adding to database failed') 
+    elif subject == 'card':
+        if message_decoded == 'closed':
             read_failure()
         else:
             read_success()
-               
-
-def get_rfid_publish_data(client):
-    rifd_reader = MFRC522()
-    last_scan = datetime.timestamp(datetime.now()) - 5
-    while True:
-        if datetime.timestamp(datetime.now()) - last_scan > 5.0:
-            (status, TagType) = rifd_reader.MFRC522_Request(rifd_reader.PICC_REQIDL)
-            if status == rifd_reader.MI_OK:
-                (status, uid) = rifd_reader.MFRC522_Anticoll()
-                if status == rifd_reader.MI_OK:
-                    dt = datetime.now()
-                    num = 0
-                    for i in range(0, len(uid)):
-                        num += uid[i] << (i*8)
-                    print(f"Card read UID: {num}")
-                    print(f"Date and time of scanning: {dt}")
-                    # read_failure()
-                    last_scan = datetime.timestamp(dt)
-                    client.publish(f"client/card/{num}", f"{dt}, {room_name}")
-                    client.subscribe(f"server/card/{num}")
-
-def register_room(client):
+            
+def register_room():
     try:
-        client.publish(f"client/room/{room_name}", room_name)
-        # Wait for the server response
+        client.publish(f'client/room/{ROOM_NAME}', ROOM_NAME)
         time.sleep(2)
     except KeyboardInterrupt:
         client.disconnect()
+    
+scan_log = {}
+               
+def read_rfid_data():
+    (status, TagType) = rfid_reader.MFRC522_Request(rfid_reader.PICC_REQIDL)
+    if status == rfid_reader.MI_OK:
+        (status, uid) = rfid_reader.MFRC522_Anticoll()
+        if status == rfid_reader.MI_OK:
+            scan_datetime = datetime.now()
+            rfid = 0
+            for i in range(0, len(uid)):
+                rfid += uid[i] << (i*8)
+            print(f'Card ID: {rfid}')
+            print(f'Date and time of scanning: {scan_datetime}')
+            scan_timestamp = datetime.timestamp(scan_datetime)
+            if rfid in scan_log:
+                if scan_timestamp - scan_log[rfid] < 5.0:
+                    return
+            scan_log[rfid] = scan_timestamp
+            client.publish(f'client/card/{rfid}', f'{scan_datetime}, {ROOM_NAME}')
+            client.subscribe(f'server/card/{rfid}')
 
-def main():
-    broker = 'localhost'
-    client = mqtt.Client()
-    client.on_connect = on_connect
-    client.on_message = on_message
-
-    # Connect to the MQTT broker
-    client.connect(broker) # TODO: add broker ip address/port
-    client.loop_start()
-
-    # Register room
-    register_room(client)
-    # Get RFID data
-    get_rfid_publish_data(client)
-        
 
 if __name__ == '__main__':
-    main()
+    client.on_connect = on_connect
+    client.on_message = on_message
+    
+    client.connect(BROKER)
+    client.loop_start()
+    
+    try:
+        register_room()
+        while True:
+            read_rfid_data()
+    except KeyboardInterrupt:
+        client.loop_stop()
+        client.disconnect()
+        GPIO.cleanup()

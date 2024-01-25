@@ -36,5 +36,5 @@ def configInfo():
     print('This is only configuration file.\n')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     configInfo()
