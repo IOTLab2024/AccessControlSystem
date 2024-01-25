@@ -58,7 +58,7 @@ def display_users_in_room(room_name):
     connection.close()
     
     if users:
-        print(f'Users in room "{room_name}": {', '.join(user[0] for user in users)}')
+        print(f'Users in room "{room_name}": {", ".join(user[0] for user in users)}')
     else:
         print(f'No users in room "{room_name}".')
 
