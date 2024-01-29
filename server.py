@@ -39,10 +39,12 @@ def on_message(client, userdata, message):
     elif subject == 'card':
         rfid = topic[2]
         if validate_card(rfid, message_decoded):
-            if is_user_in_room(rfid):
-                return_message = 'exit'
+            room_name = message_decoded.split(',')[1].strip()
+            timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+            if is_user_in_room(rfid, room_name, timestamp):
+                return_message = f'exit;{timestamp}'
             else:
-                return_message = 'entry'
+                return_message = f'entry;{timestamp}'
         else:
             return_message = 'closed'
         client.publish(f'server/{subject}/{rfid}', return_message)
@@ -62,7 +64,7 @@ def validate_card(rfid, message):
     cursor.execute(f'''
         SELECT *
         FROM User
-        WHERE rfid = '{rfid}' AND is_authorized = 1
+        WHERE rfid = "{rfid}" AND is_authorized = 1
     ''')
     result = cursor.fetchone()
     if result:
@@ -84,7 +86,7 @@ def get_id_from_rfid(rfid):
     cursor.execute(f'''
         SELECT user_id
         FROM User
-        WHERE rfid = '{rfid}'
+        WHERE rfid = "{rfid}"
     ''')
     result = cursor.fetchone()
     connection.close()
@@ -93,7 +95,7 @@ def get_id_from_rfid(rfid):
     else:
         return None
 
-def is_user_in_room(rfid):
+def is_user_in_room(rfid, room_name, timestamp):
     connection, cursor = establish_database_connection()
     user_id = get_id_from_rfid(rfid)
     cursor.execute(f'''
@@ -110,7 +112,7 @@ def is_user_in_room(rfid):
         ''')
         cursor.execute(f'''
             INSERT INTO Log (user_id, room_id, entry_timestamp, exit_timestamp)
-            VALUES ({user_id}, {result[1]}, '{result[2]}', '{time.strftime('%Y-%m-%d %H:%M:%S')}')
+            VALUES ({user_id}, {result[1]}, "{result[2]}", "{timestamp}")
         ''')
         connection.commit()
         connection.close()
@@ -120,12 +122,12 @@ def is_user_in_room(rfid):
         cursor.execute(f'''
             SELECT room_id
             FROM Room
-            WHERE name = 'room1'
+            WHERE name = "{room_name}"
         ''')
         room_id = cursor.fetchone()[0]
         cursor.execute(f'''
             INSERT INTO CurrentUserRoom (user_id, room_id, entry_timestamp)
-            VALUES ({user_id}, {room_id}, '{time.strftime('%Y-%m-%d %H:%M:%S')}')
+            VALUES ({user_id}, {room_id}, "{timestamp}")
         ''')
         connection.commit()
         connection.close()
