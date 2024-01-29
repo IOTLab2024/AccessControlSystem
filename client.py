@@ -9,6 +9,8 @@ import board
 from neopixel import NeoPixel
 from mfrc522 import MFRC522
 import paho.mqtt.client as mqtt
+from PIL import Image, ImageDraw, ImageFont
+import lib.oled.SSD1331 as SSD1331
 
 from config import *
 
@@ -24,12 +26,21 @@ BLANK_COLOR = Color(0, 0, 0)
 RED_COLOR = Color(255, 0, 0)
 GREEN_COLOR = Color(0, 255, 0)
 
-ROOM_NAME = 'room1'
+FONT_LARGE = ImageFont.truetype('./lib/oled/Font.ttf', 20)
+FONT_SMALL = ImageFont.truetype('./lib/oled/Font.ttf', 13)
+
+ROOM_NAME = 'room2'
 BROKER = '10.108.33.123'
 
 client = mqtt.Client()
 pixels = NeoPixel(board.D18, 8, brightness=1.0/32, auto_write=False)
 rfid_reader = MFRC522()
+
+# display = SSD1331.SSD1331()
+# display.Init()
+# display.clear()
+# image = Image.new("RGB", (display.width, display.height), "WHITE")
+# draw = ImageDraw.Draw(image)
 
 def buzzer_state(state):
     GPIO.output(buzzerPin, not state)
@@ -42,9 +53,11 @@ def buzzer_pattern(iterations: int, buzzer_length: float, pause_length: float):
         if i != iterations:
             time.sleep(pause_length)
 
-def read_success():
+def read_success(timestamp):
     pixels.fill(GREEN_COLOR)
     pixels.show()
+    # draw.text((8, 0), u'hello', font=FONT_LARGE, fill="BLACK")
+    # display.ShowImage(image, 0, 0)
     buzzer_pattern(iterations=1, buzzer_length=1, pause_length=0)
     pixels.fill(BLANK_COLOR)
     pixels.show()
@@ -76,7 +89,8 @@ def on_message(client, userdata, message):
         if message_decoded == 'closed':
             read_failure()
         else:
-            read_success()
+            timestamp = message_decoded.split(';')[1]
+            read_success(timestamp)
             
 def register_room():
     try:
