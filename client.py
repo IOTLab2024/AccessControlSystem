@@ -30,8 +30,8 @@ GREEN_COLOR = Color(0, 255, 0)
 FONT_LARGE = ImageFont.truetype('./lib/oled/Font.ttf', 20)
 FONT_SMALL = ImageFont.truetype('./lib/oled/Font.ttf', 13)
 
-ROOM_NAME: str
 BROKER = '10.108.33.123'
+room_name: str
 
 client = mqtt.Client()
 pixels = NeoPixel(board.D18, 8, brightness=1.0/32, auto_write=False)
@@ -72,14 +72,16 @@ def read_failure():
 
 def on_connect(client, userdata, flags, rc):
     print(f'Connected with result code {rc}')
-    client.subscribe(f'server/room/{ROOM_NAME}')
+    client.subscribe(f'server/{room_name}/register-room')
 
 def on_message(client, userdata, message):
     topic = message.topic.split('/')
-    print(str(topic) + ' ')
     message_decoded = str(message.payload.decode('utf-8'))
-    print(message_decoded)
+    
     subject = topic[1]
+    
+    # print(str(topic) + ' ')
+    # print(message_decoded)
 
     if subject == 'room':
         if message_decoded == 'success':
@@ -95,7 +97,7 @@ def on_message(client, userdata, message):
             
 def register_room():
     try:
-        client.publish(f'client/room/{ROOM_NAME}', ROOM_NAME)
+        client.publish(f'client/{room_name}/register-room', 'register')
         time.sleep(2)
     except KeyboardInterrupt:
         client.disconnect()
@@ -111,22 +113,25 @@ def read_rfid_data():
             rfid = 0
             for i in range(0, len(uid)):
                 rfid += uid[i] << (i*8)
-            #print(f'Card ID: {rfid}')
-            #print(f'Date and time of scanning: {scan_datetime}')
+            # print(f'Card ID: {rfid}')
+            # print(f'Date and time of scanning: {scan_datetime}')
             scan_timestamp = datetime.timestamp(scan_datetime)
             if rfid in scan_log:
                 if scan_timestamp - scan_log[rfid] < 5.0:
                     return
             scan_log[rfid] = scan_timestamp
-            client.publish(f'client/card/{rfid}', f'{scan_datetime}, {ROOM_NAME}')
-            client.subscribe(f'server/card/{rfid}')
+            scan_datetime_str = datetime.strftime(scan_datetime, '%Y-%m-%d %H:%M:%S')
+            client.publish(f'client/{room_name}/scan-card/{rfid}', scan_datetime_str)
+            client.subscribe(f'server/{room_name}/scan-card/{rfid}')
 
 
 if __name__ == '__main__':
     client.on_connect = on_connect
     client.on_message = on_message
     
-    ROOM_NAME = input("Enter room name: ")
+    room_name = '-'.join(
+        input('Enter room name: ').strip().lower().split()
+    )
     
     client.connect(BROKER)
     client.loop_start()
