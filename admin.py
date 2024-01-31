@@ -9,10 +9,10 @@ def get_user_id_from_rfid(rfid: str):
     try:
         connection, cursor = establish_database_connection()
         
-        cursor.execute(f'''
+        cursor.execute('''
             SELECT User.id FROM User
-            WHERE User.rfid = "{rfid}"
-        ''')
+            WHERE User.rfid = ?
+        ''', (rfid,))
         user_id = cursor.fetchone()
         connection.close()
         if not user_id:
@@ -26,10 +26,10 @@ def get_room_id_from_name(name: str):
     try:
         connection, cursor = establish_database_connection()
         
-        cursor.execute(f'''
+        cursor.execute('''
             SELECT Room.id FROM Room
-            WHERE Room.name = "{name}"
-        ''')
+            WHERE Room.name = ?
+        ''', (name,))
         room_id = cursor.fetchone()
         connection.close()
         if not room_id:
@@ -76,11 +76,11 @@ def display_user_authorized_rooms(rfid: str):
         user_id = get_user_id_from_rfid(rfid)
         connection, cursor = establish_database_connection()
         
-        cursor.execute(f'''
+        cursor.execute('''
             SELECT Room.name FROM Room
             INNER JOIN AuthenticatedUserRoom ON Room.id = AuthenticatedUserRoom.room_id
-            WHERE AuthenticatedUserRoom.user_id = {user_id}
-        ''')
+            WHERE AuthenticatedUserRoom.user_id = ?
+        ''', (user_id,))
         rooms = cursor.fetchall()
         connection.close()
     except Exception as e:
@@ -99,11 +99,11 @@ def display_room_authorized_users(room_name: str):
         room_id = get_room_id_from_name(room_name)
         connection, cursor = establish_database_connection()
         
-        cursor.execute(f'''
+        cursor.execute('''
             SELECT User.rfid FROM User
             INNER JOIN AuthenticatedUserRoom ON User.id = AuthenticatedUserRoom.user_id
-            WHERE AuthenticatedUserRoom.room_id = "{room_id}"
-        ''')
+            WHERE AuthenticatedUserRoom.room_id = ?
+        ''', (room_id,))
         users = cursor.fetchall()
         connection.close()
     except Exception as e:
@@ -122,10 +122,10 @@ def authorize_user_room(rfid: str, room_name: str):
         room_id = get_room_id_from_name(room_name)
         connection, cursor = establish_database_connection()
         
-        cursor.execute(f'''
+        cursor.execute('''
             INSERT INTO AuthenticatedUserRoom (user_id, room_id)
-            VALUES ({user_id}, {room_id})
-        ''')
+            VALUES (?, ?)
+        ''', (user_id, room_id,))
         connection.commit()
         connection.close()
         print(f'User with RFID {rfid} was granted access to room {room_name}.')
@@ -138,11 +138,11 @@ def display_users_in_room(room_name):
         room_id = get_room_id_from_name(room_name)
         connection, cursor = establish_database_connection()
         
-        cursor.execute(f'''
+        cursor.execute('''
             SELECT User.rfid FROM User
             INNER JOIN CurrentUserRoom ON User.id = CurrentUserRoom.user_id
-            WHERE CurrentUserRoom.room_id = "{room_id}"
-        ''')
+            WHERE CurrentUserRoom.room_id = ?
+        ''', (room_id,))
         users = cursor.fetchall()
         connection.close()
     except Exception as e:
