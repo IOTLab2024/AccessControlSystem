@@ -49,6 +49,16 @@ def create_database():
     ''')
 
     cursor.execute('''
+        CREATE TABLE AuthenticatedUserRoom (
+            user_id INTEGER,
+            room_id INTEGER,
+            PRIMARY KEY (user_id, room_id),
+            FOREIGN KEY (user_id) REFERENCES User(user_id),
+            FOREIGN KEY (room_id) REFERENCES Room(room_id)
+        )
+    ''')
+
+    cursor.execute('''
         CREATE TABLE Log (
             log_id INTEGER PRIMARY KEY,
             user_id INTEGER,

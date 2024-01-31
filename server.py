@@ -38,33 +38,54 @@ def on_message(client, userdata, message):
         client.publish(f'server/{subject}/{room_name}', return_message)
     elif subject == 'card':
         rfid = topic[2]
-        if validate_card(rfid, message_decoded):
-            room_name = message_decoded.split(',')[1].strip()
+        room_name = message_decoded.split(',')[1].strip()
+        if validate_card(rfid, room_name, message_decoded):
             timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
             if is_user_in_room(rfid, room_name, timestamp):
-                return_message = f'exit;{timestamp}'
+                return_message = f'exit;{timestamp};{room_name}'
             else:
-                return_message = f'entry;{timestamp}'
+                return_message = f'entry;{timestamp};{room_name}'
         else:
             return_message = 'closed'
         client.publish(f'server/{subject}/{rfid}', return_message)
+
+def get_user_id_room_id(rfid, room_name):
+    try:
+        connection, cursor = establish_database_connection()
+        cursor.execute(f'''
+            SELECT User.user_id FROM User
+            WHERE User.rfid = "{rfid}"
+        ''')
+        user_id = cursor.fetchone()
+        cursor.execute(f'''
+            SELECT Room.room_id FROM Room
+            WHERE Room.name = "{room_name}"
+        ''')
+        room_id = cursor.fetchone()
+        connection.close()
+        return user_id, room_id
+    except Exception as e:
+        print(e)
+        return None
 
 def register_room(room_name):
     try:
         connection, cursor = establish_database_connection()
         cursor.execute(f'INSERT INTO Room (name) VALUES ("{room_name}")')
         connection.commit()
+        connection.close()
         return True
     except Exception as e:
         print(e)
         return False
 
-def validate_card(rfid, message):
+def validate_card(rfid, room_name, message):
     connection, cursor = establish_database_connection()
+    user_id, room_id = get_user_id_room_id(rfid, room_name)
     cursor.execute(f'''
         SELECT *
-        FROM User
-        WHERE rfid = "{rfid}" AND is_authorized = 1
+        FROM AuthenticatedUserRoom
+        WHERE user_id = "{user_id}" AND room_id = "{room_id}"
     ''')
     result = cursor.fetchone()
     if result:

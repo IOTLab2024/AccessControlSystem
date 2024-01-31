@@ -3,6 +3,7 @@
 from typing import NamedTuple
 from datetime import datetime
 
+import sys
 import time
 import RPi.GPIO as GPIO
 import board
@@ -29,7 +30,7 @@ GREEN_COLOR = Color(0, 255, 0)
 FONT_LARGE = ImageFont.truetype('./lib/oled/Font.ttf', 20)
 FONT_SMALL = ImageFont.truetype('./lib/oled/Font.ttf', 13)
 
-ROOM_NAME = 'room2'
+ROOM_NAME: str
 BROKER = '10.108.33.123'
 
 client = mqtt.Client()
@@ -110,8 +111,8 @@ def read_rfid_data():
             rfid = 0
             for i in range(0, len(uid)):
                 rfid += uid[i] << (i*8)
-            print(f'Card ID: {rfid}')
-            print(f'Date and time of scanning: {scan_datetime}')
+            #print(f'Card ID: {rfid}')
+            #print(f'Date and time of scanning: {scan_datetime}')
             scan_timestamp = datetime.timestamp(scan_datetime)
             if rfid in scan_log:
                 if scan_timestamp - scan_log[rfid] < 5.0:
@@ -124,6 +125,8 @@ def read_rfid_data():
 if __name__ == '__main__':
     client.on_connect = on_connect
     client.on_message = on_message
+    
+    ROOM_NAME = input("Enter room name: ")
     
     client.connect(BROKER)
     client.loop_start()

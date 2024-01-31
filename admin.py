@@ -62,6 +62,30 @@ def authorize_user(rfid: str):
         print(e)
         return
 
+def authorize_user_room(rfid: str, room_name: str):
+    try:
+        connection, cursor = establish_database_connection()
+        cursor.execute(f'''
+            SELECT User.user_id FROM User
+            WHERE User.rfid = "{rfid}"
+        ''')
+        user_id = cursor.fetchone()
+        cursor.execute(f'''
+            SELECT Room.room_id FROM Room
+            WHERE Room.name = "{room_name}"
+        ''')
+        room_id = cursor.fetchone()
+        cursor.execute(f'''
+            INSERT INTO AuthenticatedUserRoom (user_id, room_id)
+            VALUES ({user_id}, {room_id})
+        ''')
+        connection.commit()
+        connection.close()
+        print(f'User with RFID {rfid} was granted access to room {room_name}.')
+    except Exception as e:
+        print(e)
+        return
+
 
 def display_users_in_room(room_name):
     try:
