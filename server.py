@@ -22,8 +22,8 @@ def on_message(client, userdata, message):
     room_name = topic[1]
     action = topic[2]
     
-    print(str(topic) + ' ')
-    print(message_decoded)
+    # print(str(topic) + ' ')
+    # print(message_decoded)
 
     return_message: str
     if action == 'register-room':
