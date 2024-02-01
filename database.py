@@ -23,7 +23,7 @@ def create_database():
     cursor.execute('''
         CREATE TABLE User (
             id INTEGER PRIMARY KEY,
-            rfid TEXT UNIQUE,
+            rfid TEXT UNIQUE
         )
     ''')
     cursor.execute('''
