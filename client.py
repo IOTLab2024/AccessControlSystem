@@ -30,7 +30,7 @@ GREEN_COLOR = Color(0, 255, 0)
 FONT_LARGE = ImageFont.truetype('./lib/oled/Font.ttf', 20)
 FONT_SMALL = ImageFont.truetype('./lib/oled/Font.ttf', 13)
 
-BROKER = 'localhost'
+BROKER = '10.108.33.123'
 room_name: str
 
 client = mqtt.Client()
