@@ -30,7 +30,7 @@ GREEN_COLOR = Color(0, 255, 0)
 FONT_LARGE = ImageFont.truetype('./lib/oled/Font.ttf', 20)
 FONT_SMALL = ImageFont.truetype('./lib/oled/Font.ttf', 13)
 
-BROKER = '10.108.33.123'
+BROKER = 'localhost'
 room_name: str
 
 client = mqtt.Client()
@@ -78,17 +78,17 @@ def on_message(client, userdata, message):
     topic = message.topic.split('/')
     message_decoded = str(message.payload.decode('utf-8'))
     
-    subject = topic[1]
+    action = topic[2]
     
-    # print(str(topic) + ' ')
-    # print(message_decoded)
+    print(str(topic) + ' ')
+    print(message_decoded)
 
-    if subject == 'room':
+    if action == 'register-room':
         if message_decoded == 'success':
             print('Room added to database')
         elif message_decoded == 'failure':
             print('Room adding to database failed') 
-    elif subject == 'card':
+    elif action == 'scan-card':
         if message_decoded == 'closed':
             read_failure()
         else:
