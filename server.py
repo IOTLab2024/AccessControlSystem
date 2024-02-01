@@ -22,8 +22,8 @@ def on_message(client, userdata, message):
     room_name = topic[1]
     action = topic[2]
     
-    # print(str(topic) + ' ')
-    # print(message_decoded)
+    print(str(topic) + ' ')
+    print(message_decoded)
 
     return_message: str
     if action == 'register-room':
@@ -56,7 +56,7 @@ def register_room(room_name):
         print(e)
         return False
 
-def validate_card(rfid, room_name, message):
+def validate_card(rfid, room_name):
     user_id = get_user_id_from_rfid(rfid)
     room_id = get_room_id_from_name(room_name)
     connection, cursor = establish_database_connection()
