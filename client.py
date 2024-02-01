@@ -80,8 +80,8 @@ def on_message(client, userdata, message):
     
     action = topic[2]
     
-    print(str(topic) + ' ')
-    print(message_decoded)
+    # print(str(topic) + ' ')
+    # print(message_decoded)
 
     if action == 'register-room':
         if message_decoded == 'success':
