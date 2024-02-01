@@ -210,7 +210,7 @@ if __name__ == '__main__':
     parser.add_argument('--rooms', action='store_true', help='Display all rooms.')
     parser.add_argument('--user-rooms', type=str, help='Display all rooms a user with specified RFID has access to. (Format: --user-rooms <rfid>)')
     parser.add_argument('--room-users', type=str, help='Display all users a room with specified name can be accessed by. (Format: --room-users <room_name>)')
-    parser.add_argument('--authorize', type=str, help='Grant access to a room with specified name to a user with specified RFID. (Format: --authorize <rfid> <room_name>)')
+    parser.add_argument('--authorize', type=str, nargs=2, help='Grant access to a room with specified name to a user with specified RFID. (Format: --authorize <rfid> <room_name>)')
     parser.add_argument('--users-in-room', type=str, help='Display users in a room with specified name. (Format: --users-in-room <room_name>)')
     parser.add_argument('--current-users', action='store_true', help='Display currently active users.')
     parser.add_argument('--recent-logs', action='store_true', help='Display recent logs.')
@@ -222,9 +222,9 @@ if __name__ == '__main__':
     elif args.rooms:
         dipslay_rooms()
     elif args.user_rooms:
-        display_user_authorized_rooms(args.user_authorized_rooms)
+        display_user_authorized_rooms(args.user_rooms)
     elif args.room_users:
-        display_room_authorized_users(args.room_authorized_users)
+        display_room_authorized_users(args.room_users)
     elif args.authorize is not None:
         authorize_user_room(args.authorize[0], args.authorize[1])
     elif args.users_in_room:
